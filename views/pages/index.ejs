@@ -1,0 +1,882 @@
+<%- include('../includes/head.ejs') %>
+
+<script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://apis.google.com/js/platform.js"></script>
+</head>
+
+<body>
+
+    <div id="fb-root"></div>
+    <script async defer crossorigin="anonymous"
+        src="https://connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v6.0&appId=1730240140445375&autoLogAppEvents=1"></script>
+
+    <div class="preloader-bg">
+        <div class="preloader"></div>
+    </div>
+
+    <div id="app" v-cloak>
+
+        <div>
+            <% if (!user) { %>
+
+            <div v-show="false">
+                <p>{{LoggedIn=false}}</p>
+            </div>
+
+            <div class="cookie-container" v-if="ShowCookieConsent">
+                <div class="cookie">
+                    <h3>Cookies & Privacy</h3>
+                    <p>This website uses cookies to ensure you get the best experience on our website.</p>
+                    <div class="cookie-btn">
+                        <a href="/privacy" target="_blank">More info</a>
+                        <button @click="AcceptCookieConsent">Got it</button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+
+                <div class="container">
+                    <h1 class="game-name"> <img src="/img/favicon/favicon-32x32.png" alt=""> LudoGame.io <sub
+                            class="build-version">(Beta Build v0.0.1)</span></h1>
+
+                    <!-- <div class="socialBtns">
+                        <div class="fb-like" data-href="https://www.facebook.com/ludogame.io/" data-width=""
+                            data-layout="button" data-action="like" data-size="small" data-share="true"></div>
+                        <div class="g-ytsubscribe" data-channelid="UCPfnsiQ4WkPG6lEZbJQ18Yw" data-layout="default"
+                            data-count="default"></div>
+                    </div> -->
+
+                    <div class="player-wrapper">
+                        <div class="profile-pic">
+                            <img src="/img/Geust-Icon.png" alt="guest-profile-pic"
+                                style="border: 3px solid rgba(128, 128, 128, 0.541);">
+                        </div>
+
+                        <div class=" player-details">
+                            <h2 class="player-name" style="color: rgb(44, 44, 44); font-weight: 500; font-size: 1.5em;">
+                                {{ PlayerNickname == ""? "Guest" : PlayerNickname }}</h2>
+                            <h3 class="player-level">Level 1</h3>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="col">
+                        <div class="wrapper">
+                            <input class="nick-input" v-model="PlayerNickname" type="text" placeholder="Enter Nickname"
+                                maxlength="15">
+                            <form action="/auth/guest" method="post">
+                                <input type="text" class="hidden" name="username" :value="PlayerNickname">
+                                <button class="guest btn"><img class="icon-size" src="/img/icons/guest.png"
+                                        alt="guest-icon">
+                                    Play as Guest</button>
+                            </form>
+
+                            <div class="line-container">
+                                <div class="line"></div>
+                                <p class="or">or</p>
+                                <div class="line"></div>
+                            </div>
+
+                            <a href="/auth/facebook" class="fb btn">
+                                <img class="icon-size" src="/img/icons/facebook.png" alt="facebook-icon"> Login with
+                                Facebook
+                            </a>
+                            <a href="/auth/google" class="google btn">
+                                <img class="icon-size" src="/img/icons/google.png" alt="google-icon"> Login with Google
+                            </a>
+
+                        </div>
+
+                        <div class="global-chat-container">
+
+                            <div class="locked">
+                                <p>Login with Google OR Facebook to chat globally.</p>
+                            </div>
+
+                            <div id="global-chat-wrapper">
+                                <div class="chat">
+                                    <p class="chat-msg"> <span class="chat-username">username</span> - message</p>
+                                </div>
+
+                            </div>
+                            <div class="global-chat-input-wrapper">
+                                <input id="global-chat-input" type="text" v-model="ChatMessage"
+                                    placeholder="Type your message" v-on:keyup.enter="SendChatMessage">
+                                <button id="global-chat-input-btn">send</button>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+
+        <div>
+            <% if (user) { %>
+
+            <div v-show="false">
+                <p>{{LoggedIn=true}}</p>
+                <% if (user.type != 'guest') { %>
+                <p>{{IsGuest=false}}</p>
+                <% } %>
+            </div>
+
+            <% if (playerStats) { %>
+            <div v-show="false">
+                <!-- <p>{{PlayerStats.lvl = <%= playerStats.lvl %> }}</p> -->
+                <p>{{PlayerXp = <%= playerStats.xp %> }}</p>
+                <p>{{PlayerStats.coins = <%= playerStats.coins %> }}</p>
+                <p>{{PlayerStats.wonGames = <%= playerStats.wonGames %> }}</p>
+                <p>{{PlayerStats.lostGames= <%= playerStats.lostGames %> }}</p>
+            </div>
+            <% } %>
+
+            <div class="menu-bg" :class="[ShowMenuBG?'':'hidden']" @click="HideActiveMenu"></div>
+
+            <div class="container" v-if="!StartGame">
+                <h1 class="game-name"> <img src="/img/favicon/favicon-32x32.png" alt=""> LudoGame.io <sub
+                        class="build-version">(Beta Build v0.0.1)</span></h1>
+
+                <!-- <div class="socialBtns">
+                    <div class="fb-like" data-href="https://www.facebook.com/ludogame.io/" data-width=""
+                        data-layout="button" data-action="like" data-size="small" data-share="true"></div>
+                    <div class="g-ytsubscribe" data-channelid="UCPfnsiQ4WkPG6lEZbJQ18Yw" data-layout="default"
+                        data-count="default"></div>
+                </div> -->
+
+                <div class="player-wrapper">
+                    <div class="profile-pic">
+                        <img src="<%= user.thumbnail %>" alt="player-profile-pic" id="player-profile-pic">
+                    </div>
+
+                    <div class="player-details">
+                        <h2 class="player-name"><%= user.username %>
+                            <% if (user.type != 'guest') { %> <span class="nickname"
+                                id="nickname">(<%= user.nickname %>)
+                            </span>
+                            <% } %>
+                        </h2>
+
+                        <% if (user.type != 'guest') { %>
+                        <div class="stats-wrapper">
+                            <div class="lvl-bar-container">
+                                <div class="lvl-bar-progress-indicator" :style="{width: GetIndicatorValue+'%'}">
+                                </div>
+                                <div class="lvl-bar-lvl-text">Level-{{PlayerStats.lvl}}</div>
+                                <div class="lvl-bar-progress-text">{{PlayerStats.xp}}/{{PlayerStats.nextXP}}
+                                </div>
+                            </div>
+                            <div class="coins-container">
+                                <img src="/img/icons/coins.png" alt="coins-icon">
+                                <p>{{PlayerStats.coins}} coins</p>
+                            </div>
+                        </div>
+                        <% } %>
+
+                    </div>
+
+
+
+                    <div class="cog-wrapper">
+                        <button class="cog btn" @click="ShowSettingsMenu">
+                            <img class="icon-size" src="/img/icons/settings.png" alt="cog-icon">
+                        </button>
+                    </div>
+
+                    <div class="cog-menu-wrapper" v-if="ShowSettings">
+                        <div class="cog-menu">
+                            <a href="/auth/logout">Logout</a>
+                            <% if (user.type != 'guest') { %>
+                            <a href="#" @click="ActivateNicknameSelectionMenu">Change Nickname</a>
+                            <% } %>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <% if (user.type != 'guest') { %>
+                <div class="col" v-if="ShowNicknameSelectionMenu">
+                    <div v-if="!ShowNicknameLoader">
+                        <input class="nick-input" v-model="PlayerNickname" type="text" placeholder="Enter Nickname"
+                            maxlength="15">
+                        <div class="next-btn-wrapper">
+                            <button class="next-btn" @click="UpdateNickname">
+                                <img class="icon-size" src="/img/icons/arrow-right.png" alt="right-arrow-icon"></button>
+                        </div>
+                    </div>
+
+                    <div v-if="ShowNicknameLoader">
+                        <div class="loader-small"></div>
+                    </div>
+
+                </div>
+                <% } %>
+
+                <% if (user.type == 'guest') { %> <div class="col" v-if="SelectedMode == ''"> <% } %>
+
+                    <% if (user.type != 'guest') { %> <div class="col"
+                        v-if="ShowModeSelectionMenu && !ShowNicknameSelectionMenu"> <% } %>
+
+                        <div class="wrapper">
+                            <h2>Select Mode</h2>
+                            <button class="computer btn" @click="SelectMode('computer')"><img class="icon-size"
+                                    src="/img/icons/robot.png" alt="robot-icon">
+                                Computer</button>
+                            <button class="local btn" @click="SelectMode('local')">
+                                <img class="icon-size" src="/img/icons/users-group.png" alt="guest-local-icon">
+                                Local
+                                Multiplayer
+                            </button>
+                            <button class="online btn tooltip" @click="SelectMode('online')">
+                                <span class="tooltiptext">Coming Soon!</span>
+                                <img class="comingIcon" src="/img/icons/coming.png" alt="coming-icon">
+                                <img class="icon-size" src="/img/icons/globe.png" alt="globe-icon">
+                                Online Multiplayer
+                            </button>
+                            <button class="online-with-friends btn tooltip" @click="SelectMode('friends-online')">
+                                <span class="tooltiptext">Coming Soon!</span>
+                                <img class="comingIcon" src="/img/icons/coming.png" alt="coming-icon">
+                                <img class="icon-size" src="/img/icons/user-group.png" alt="friend-icon">
+                                Play with Friends
+                            </button>
+
+                        </div>
+
+                        <div class="global-chat-container">
+
+                            <% if (user.type == 'guest') { %>
+                            <div class="locked">
+                                <p>Login with Google OR Facebook to chat globally.</p>
+                            </div>
+                            <% } %>
+
+                            <div id="global-chat-wrapper" @scroll="onScroll">
+                                <div class="chat" v-for="data in GlobalChats">
+                                    <p class="chat-msg"> <span class="chat-username">{{data.username}}</span> -
+                                        {{data.msg}}</p>
+                                </div>
+
+                            </div>
+                            <div class="global-chat-input-wrapper">
+                                <input id="global-chat-input" type="text" v-model="ChatMessage"
+                                    placeholder="Type your message" v-on:keyup.enter="SendChatMessage">
+                                <button id="global-chat-input-btn" @click="SendChatMessage">send</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="col"
+                        v-if="(SelectedMode != 0) && SelectedPlayers == 0 && SelectedMode != 'online' && SelectedMode != 'friends-online'">
+                        <div class="wrapper">
+                            <h2>Select Players</h2>
+                            <button class=" btn" @click="SelectPlayers('two')"><span class="dice-unicode">&#9857;</span>
+                                Two Players</button>
+                            <button class=" btn" @click="SelectPlayers('three')"><span
+                                    class="dice-unicode">&#9857;</span>
+                                Three Players</button>
+                            <button class=" btn" @click="SelectPlayers('four')"><span
+                                    class="dice-unicode">&#9859;</span>
+                                Four Players
+                            </button>
+                        </div>
+                        <div class="next-btn-wrapper">
+                            <button class="next-btn" @click="ResetSelection">
+                                <img class="icon-size" src="/img/icons/arrow-left.png" alt="left-arrow-icon"></button>
+                        </div>
+
+                    </div>
+
+
+                    <div class="col" v-if="SelectedPlayers !=0 && SelectedMode == 'computer'">
+                        <div class="wrapper">
+                            <h2>Select Color</h2>
+                            <button class="red btn" @click="SelectColor('red')"><img class="icon-size"
+                                    src="/img/icons/pon.png" alt="pon-icon">
+                                Red</button>
+                            <button class="blue btn" @click="SelectColor('blue')">
+                                <img class="icon-size" src="/img/icons/pon.png" alt="pon-icon"> Blue
+                            </button>
+                            <button class="yellow btn" @click="SelectColor('yellow')"><img class="icon-size"
+                                    src="/img/icons/pon.png" alt="pon-icon">
+                                Yellow</button>
+                            <button class="green btn" @click="SelectColor('green')">
+                                <img class="icon-size" src="/img/icons/pon.png" alt="pon-icon"> Green
+                            </button>
+                        </div>
+                        <div class="next-btn-wrapper">
+                            <button class="next-btn" @click="ResetSelection">
+                                <img class="icon-size" src="/img/icons/arrow-left.png" alt="left-arrow-icon"></button>
+                        </div>
+                    </div>
+
+                    <div class="col" v-if="SelectedPlayers == 'two' && SelectedMode == 'local'">
+                        <h2>Select Color</h2>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="red-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 1" v-model="LocalPlayers.red">
+                        </div>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="yellow-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 2" v-model="LocalPlayers.yellow">
+                        </div>
+                        <div class="color-select-buttons-wrapper">
+                            <button class="btn" @click="StartLocalGame">Play</button>
+                            <button class="btn" @click="ResetLocalGameNames">Reset</button>
+                        </div>
+                        <div class="next-btn-wrapper">
+                            <button class="next-btn" @click="ResetSelection">
+                                <img class="icon-size" src="/img/icons/arrow-left.png" alt="left-arrow-icon"></button>
+                        </div>
+                    </div>
+
+                    <div class="col" v-if="SelectedPlayers == 'three' && SelectedMode == 'local'">
+                        <h2>Select Color</h2>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="red-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 1" v-model="LocalPlayers.red">
+                        </div>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="yellow-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 2" v-model="LocalPlayers.yellow">
+                        </div>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="green-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 2" v-model="LocalPlayers.green">
+                        </div>
+                        <div class="color-select-buttons-wrapper">
+                            <button class="btn" @click="StartLocalGame">Play</button>
+                            <button class="btn" @click="ResetLocalGameNames">Reset</button>
+                        </div>
+                        <div class="next-btn-wrapper">
+                            <button class="next-btn" @click="ResetSelection">
+                                <img class="icon-size" src="/img/icons/arrow-left.png" alt="left-arrow-icon"></button>
+                        </div>
+                    </div>
+
+                    <div class="col" v-if="SelectedPlayers == 'four' && SelectedMode == 'local'">
+                        <h2>Select Color</h2>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="red-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 1" v-model="LocalPlayers.red">
+                        </div>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="blue-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 2" v-model="LocalPlayers.blue">
+                        </div>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="yellow-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 3" v-model="LocalPlayers.yellow">
+                        </div>
+                        <div class="color-select-template">
+                            <img src="/img/Geust-Icon.png" class="green-border" alt="guest-icon">
+                            <input type="text" placeholder="Player 4" v-model="LocalPlayers.green">
+                        </div>
+                        <div class="color-select-buttons-wrapper">
+                            <button class="btn" @click="StartLocalGame">Play</button>
+                            <button class="btn" @click="ResetLocalGameNames">Reset</button>
+                        </div>
+                        <div class="next-btn-wrapper">
+                            <button class="next-btn" @click="ResetSelection">
+                                <img class="icon-size" src="/img/icons/arrow-left.png" alt="left-arrow-icon"></button>
+                        </div>
+                    </div>
+
+
+
+
+                    <div class="multiplayer-online-container" v-if="SelectedMode == 'online'">
+
+                        <div class="multiplayer-online-wrapper">
+                            <div class="online-list-wrapper">
+
+                                <div class="lobby-title-wrapper">
+                                    <div class="next-btn-wrapper">
+                                        <button class="next-btn" @click="ResetSelection">
+                                            <img class="icon-size" src="/img/icons/arrow-left.png"
+                                                alt="left-arrow-icon"></button>
+                                    </div>
+                                    <h2>ONGOING GAME LIST</h2>
+                                    <div class="next-btn-wrapper">
+                                        <button class="next-btn" @click="RefreshRooms">
+                                            <img class="icon-size" src="/img/icons/refresh.png"
+                                                alt="left-arrow-icon"></button>
+                                    </div>
+                                </div>
+                                <table>
+                                    <tr>
+                                        <th class="td-1">ID</th>
+                                        <th class="td-2">NAME</th>
+                                        <th class="td-3">#/#</th>
+                                        <th class="td-4"></th>
+                                    </tr>
+                                </table>
+                                <div class="game-list">
+                                    <table>
+                                        <tr v-for="roomData in GameRoomList">
+                                            <td class="td-1">{{roomData.RoomID}}</td>
+                                            <td class="td-2">{{roomData.RoomName}}</td>
+                                            <td class="td-3">{{roomData.PlayerCount}}/{{roomData.RoomSize}}</td>
+                                            <td class="td-4"><button class="join-game-button"
+                                                    @click="JoinRoom(roomData.RoomID)">Join</button></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                            </div>
+                            <div class="online-side-wrapper">
+
+                                <div class="online-game-options-wrapper">
+                                    <button>Quick Match</button>
+                                    <button @click="ShowCreateMatchContainer=true">Create Match</button>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="global-chat-container">
+
+                            <% if (user.type == 'guest') { %>
+                            <div class="locked">
+                                <p>Login with Google OR Facebook to chat globally.</p>
+                            </div>
+                            <% } %>
+
+                            <div id="global-chat-wrapper" @scroll="onScroll">
+                                <div class="chat" v-for="data in GlobalChats">
+                                    <p class="chat-msg"> <span class="chat-username">{{data.username}}</span> -
+                                        {{data.msg}}</p>
+                                </div>
+
+                            </div>
+                            <div class="global-chat-input-wrapper">
+                                <input id="global-chat-input" type="text" v-model="ChatMessage"
+                                    placeholder="Type your message" v-on:keyup.enter="SendChatMessage">
+                                <button id="global-chat-input-btn" @click="SendChatMessage">send</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="multiplayer-online-container" v-if="SelectedMode == 'friends-online'">
+
+                        <div class="multiplayer-online-wrapper">
+                            <div class="online-side-wrapper">
+
+                                <div class="online-game-options-wrapper">
+                                    <input type="text" v-model="CreateRoomDetails.PrivateRoomID">
+                                    <button @click="JoinRoom">Join Match</button>
+                                    <button @click="ShowCreateMatchContainer=true">Create Match</button>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="global-chat-container">
+
+                            <% if (user.type == 'guest') { %>
+                            <div class="locked">
+                                <p>Login with Google OR Facebook to chat globally.</p>
+                            </div>
+                            <% } %>
+
+                            <div id="global-chat-wrapper" @scroll="onScroll">
+                                <div class="chat" v-for="data in GlobalChats">
+                                    <p class="chat-msg"> <span class="chat-username">{{data.username}}</span> -
+                                        {{data.msg}}</p>
+                                </div>
+
+                            </div>
+                            <div class="global-chat-input-wrapper">
+                                <input id="global-chat-input" type="text" v-model="ChatMessage"
+                                    placeholder="Type your message" v-on:keyup.enter="SendChatMessage">
+                                <button id="global-chat-input-btn" @click="SendChatMessage">send</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <div v-if="!StartGame">
+
+                    <div class="create-match-container" v-if="ShowCreateMatchContainer">
+
+                        <div class="create-match-option-wrapper">
+
+                            <input type="text" placeholder="Enter Room Name" v-model="CreateRoomDetails.RoomName">
+
+                            <div class="mode-select">
+                                <div>
+
+                                    <label for="mode">Select Mode:</label>
+                                    <select id="mode" v-model="CreateRoomDetails.RoomSize">
+                                        <option value="2">Two</option>
+                                        <option value="3">Three</option>
+                                        <option value="4">Four</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button @click="CreateRoom">Create Room</button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="player-quick-menu" v-if="ShowRoomDetailsContainer==2">
+                        <h2>{{RoomDetails.RoomName}}( {{CreateRoomDetails.PrivateRoomID}} )</h2>
+                        <div class="wrapper">
+                            <div class="players-wrapper">
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Two.Player1.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Two.Player1.nickname}}</h2>
+                                </div>
+                                <p class="vs-style">VS</p>
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Two.Player2.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Two.Player2.nickname}}</h2>
+                                </div>
+                            </div>
+                            <div class="search-timer">
+                                <h2>00:42</h2>
+                            </div>
+                            <div class="search-status">
+                                <h2>{{RoomDetails.RoomStatus}}</h2>
+                            </div>
+                            <button @click="ExitRoom(RoomDetails.RoomID)">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="player-quick-menu" v-if="ShowRoomDetailsContainer==3">
+                        <h2>{{RoomDetails.RoomName}}( {{CreateRoomDetails.PrivateRoomID}} )</h2>
+                        <div class="wrapper">
+                            <div class="players-wrapper">
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Three.Player1.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Three.Player1.nickname}}</h2>
+                                </div>
+
+                            </div>
+                            <p class="vs-style" style="margin: 0 auto;">VS</p>
+                            <div class="players-wrapper">
+
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Three.Player2.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Three.Player2.nickname}}</h2>
+                                </div>
+                                <p class="vs-style">VS</p>
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Three.Player3.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Three.Player3.nickname}}</h2>
+                                </div>
+                            </div>
+                            <div class="search-timer">
+                                <h2>00:42</h2>
+                            </div>
+                            <div class="search-status">
+                                <p class="loading">{{RoomDetails.RoomStatus}}</p>
+                            </div>
+                            <button @click="ExitRoom(RoomDetails.RoomID)">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="player-quick-menu" v-if="ShowRoomDetailsContainer==4">
+                        <h2>{{RoomDetails.RoomName}}( {{CreateRoomDetails.PrivateRoomID}} )</h2>
+                        <div class="wrapper">
+                            <div class="players-wrapper">
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Four.Player1.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Four.Player1.nickname}}</h2>
+                                </div>
+
+                            </div>
+                            <p class="vs-style" style="margin: 0 auto;">VS</p>
+                            <div class="players-wrapper">
+
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Four.Player2.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Four.Player2.nickname}}</h2>
+                                </div>
+                                <p class="vs-style">VS</p>
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Four.Player3.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Four.Player3.nickname}}</h2>
+                                </div>
+                                <p class="vs-style">VS</p>
+                                <div class="player-detail">
+                                    <div class="player-image-wrapper">
+                                        <img :src="RoomDetails.RoomPlayers.Four.Player4.thumbnail" alt="">
+                                    </div>
+                                    <h2>{{RoomDetails.RoomPlayers.Four.Player4.nickname}}</h2>
+                                </div>
+                            </div>
+                            <div class="search-timer">
+                                <h2>00:42</h2>
+                            </div>
+                            <div class="search-status">
+                                <p class="loading">{{RoomDetails.RoomStatus}}</p>
+                            </div>
+                            <button @click="ExitRoom(RoomDetails.RoomID)">Cancel</button>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <canvas id="gameScreen" class="grad1" v-show="StartGame"></canvas>
+
+                <div class="close-game" v-show="StartGame">
+                    <img @click="ShowQuitAlert()" src="/img/icons/close-game.png" alt="close-icon">
+                </div>
+
+                <div v-show="GameQuitAlert" class="quit-container">
+                    <div class="quit-wrapper">
+                        <h1>Exit</h1>
+                        <h2>Are you sure you want to quit the game?</h2>
+                        <div class="quit-btn-container">
+                            <button @click="QuitGame()" class="red">Exit</button>
+                            <button @click="ResumeGame()" class="green">Keep Playing</button>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div v-show="GameoverLeaderBoardAlert == 2" class="two-player-gameover-screen">
+                    <div class="container">
+
+                        <h1 v-if="GameoverPlayerLeaderboard.Two.isWinner">You Win!</h1>
+                        <h1 v-else>You Lose</h1>
+
+                        <div class="gained-prize" v-if="GameoverPlayerLeaderboard.Two.isWinner">
+                            <p>+110 xp</p>
+                            <p>+80 coins</p>
+                        </div>
+                        <div class="gained-prize" v-else>
+                            <p>+60 xp</p>
+                            <p>+30 coins</p>
+                        </div>
+
+                        <h3 v-if="GameoverPlayerLeaderboard.Two.isOpponentLeft">Opponent left!</h3>
+
+                        <table class="box-model">
+                            <th>WIN</th>
+                            <th>LOSE</th>
+                            <tr>
+                                <td>{{GamesWonCounter}}</td>
+                                <td>{{GamesLostCounter}}</td>
+                            </tr>
+                        </table>
+                        <div class="btn-menu">
+                            <button @click="QuitGame()">Main Menu</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-show="GameoverLeaderBoardAlert == 3" class="player-gameover-screen">
+                    <div class="container">
+                        <div class="won">
+                            <h1>You Won</h1>
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy1.png" alt="trophy-icon"></p>
+                            <p>1<sup>st</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+200</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+150</p>
+                            <p><img class="profile" :src="GameoverPlayerLeaderboard.Three.p1.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Three.p1.name}}</p>
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy2.png" alt="trophy-icon"></p>
+                            <p>2<sup>nd</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+150</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+100</p>
+                            <p class="profile"><img :src="GameoverPlayerLeaderboard.Three.p2.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Three.p2.name}}</p>
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy3.png" alt="trophy-icon"></p>
+                            <p>3<sup>rd</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+80</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+50</p>
+                            <p class="profile"><img :src="GameoverPlayerLeaderboard.Three.p3.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Three.p3.name}}</p>
+                        </div>
+                        <button class="leaderboard-btn-menu" @click="QuitGame()">main menu</button>
+                    </div>
+
+                </div>
+
+
+                <div v-show="GameoverLeaderBoardAlert == 4" class="player-gameover-screen">
+                    <div class="container">
+                        <div class="won">
+                            <h1>You Won</h1>
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy1.png" alt="trophy-icon"></p>
+                            <p>1<sup>st</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+300</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+250</p>
+                            <p class="profile"><img :src="GameoverPlayerLeaderboard.Four.p1.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Four.p1.name}}</p>
+
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy2.png" alt="trophy-icon"></p>
+                            <p>2<sup>nd</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+200</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+150</p>
+                            <p class="profile"><img :src="GameoverPlayerLeaderboard.Four.p2.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Four.p2.name}}</p>
+
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy3.png" alt="trophy-icon"></p>
+                            <p>3<sup>rd</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+150</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+100</p>
+                            <p class="profile"><img :src="GameoverPlayerLeaderboard.Four.p3.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Four.p3.name}}</p>
+                        </div>
+                        <div class="player-one">
+                            <p><img src="/img/leaderboard/trophy4.png" alt="trophy-icon"></p>
+                            <p>4<sup>th</sup> </p>
+                            <p><img src="/img/leaderboard/medal.png" alt="exp-icon"></p>
+                            <p>+100</p>
+                            <p><img src="/img/leaderboard/coins.png" alt="coins-icon"></p>
+                            <p>+50</p>
+                            <p class="profile"><img :src="GameoverPlayerLeaderboard.Four.p4.profilePic"></p>
+                            <p>{{GameoverPlayerLeaderboard.Four.p4.name}}</p>
+                        </div>
+                        <button class="leaderboard-btn-menu" @click="QuitGame()">main menu</button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <% } %>
+        </div>
+
+
+        <div v-show="!ActiveSession">
+            <div class="menu-bg"></div>
+            <div class="error-container">
+                <h1>Session Error</h1>
+                <img src="/img/icons/error.png" alt="error-icon">
+                <p>LudoGame.io is active on another window</p>
+                <p>Please Close that window to use it here!</p>
+                <div class="retry-btn">
+                    <button @click="reloadPage">Retry</button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div v-show="ShowNetworkError">
+            <div class="menu-bg"></div>
+            <div class="error-container">
+                <h1>Disconnected</h1>
+                <img src="/img/icons/error.png" alt="error-icon">
+                <p>Connection has been lost.</p>
+                <p>press retry to connect.</p>
+                <div class="retry-btn">
+                    <button @click="reloadPage">Retry</button>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div v-if="!StartGame" class="footer">
+            <a href="/privacy" target="_blank">Privacy Policy</a>
+            <p>|</p>
+            <a @click="FooterActiveTab(1)">Changelog</a>
+            <p>|</p>
+            <a @click="FooterActiveTab(2)">Contact Support</a>
+            <div v-show="ShowContactForm" class="form-container">
+                <button @click="ShowContactForm=false" class="close-form">-</button>
+                <h3>Contact Us</h3>
+                <div class="wrapper">
+                    <form action="/contactSupport" method="POST">
+                        <label for="fname">Your Name</label>
+                        <input type="text" id="fname" name="name" placeholder="" required>
+                        <label for="ename">Email Address</label>
+                        <input type="email" id="ename" name="email" placeholder="" required>
+                        <label for="subject">How we can help you?</label>
+                        <textarea id="subject" name="subject" placeholder="" style="height:150px" required></textarea>
+                        <input type="submit" value="Send">
+                    </form>
+                </div>
+            </div>
+            <div v-show="ShowChangelog" class="changelog-container">
+                <button @click="ShowChangelog=false" class="close-changelog">-</button>
+                <h3>Change log</h3>
+
+                <div class="news-feed-container">
+                    <% for (var i = 0; i < changeLog.length;  i++ ) { %>
+                    <div class="wrapper">
+                        <span><%= changeLog[i].date %></span> <span class="update-text"><%= changeLog[i].title %></span>
+                        <li><%= changeLog[i].message %></li>
+                    </div>
+
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"> </script>
+    <script type="module" src="/js/index.js"></script>
+    <script type="module" src="/js/events.js"></script>
+
+
+    <%- include('../includes/end.ejs') %>

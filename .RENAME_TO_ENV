@@ -1,0 +1,10 @@
+    
+GOOGLE_CLIENT_ID = "client id here"
+GOOGLE_CLIENT_SECRET = "client secret here"
+
+FACEBOOK_APP_ID = "fb app id here"
+FACEBOOK_APP_SECRET = "fb secret here"
+  
+MONGO_DB = "db url here"
+
+COOKIE_KEY = "your cookie key db "
