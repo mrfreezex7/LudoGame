@@ -1,4 +1,4 @@
-import { init, LoadAssets } from "/js/index.js";
+import { init, LoadAssets, PreloadComplete } from "/js/index.js";
 import { QuitGame } from "/js/game-manager.js";
 import { Dice } from "/js/manage-dice.js";
 import { GetAllPawns } from "/js/manage-pawns.js";
@@ -641,6 +641,7 @@ export let vm = new Vue({
   watch: {
     AssetsLoaded() {
       console.log("asset-loaded");
+      PreloadComplete();
     },
     StartGame() {
       if (this.StartGame === true) {
