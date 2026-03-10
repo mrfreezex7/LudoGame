@@ -1,30 +1,34 @@
-const MongoClient = require('mongodb').MongoClient;
-const keys = require('../config/keys');
-const assert = require('assert');
+const MongoClient = require("mongodb").MongoClient;
+const keys = require("../config/keys");
 
 const url = keys.mongodb.dbURI;
-
-const dbName = 'LudoGame';
+const dbName = "LudoGame";
 
 let _db;
 
-const mongoConnect = callback => {
-    MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, client) {
-        assert.equal(null, err);
-        console.log("Connected successfully to server");
+const mongoConnect = (callback) => {
+  MongoClient.connect(
+    url,
+    { useNewUrlParser: true, useUnifiedTopology: true },
+    (err, client) => {
+      if (err) {
+        console.log("MongoDB connection error:", err);
+        return;
+      }
 
-        _db = client.db(dbName);
-        callback(client);
-    });
-}
+      console.log("Connected successfully to MongoDB");
 
-
+      _db = client.db(dbName);
+      callback(client);
+    },
+  );
+};
 
 const getDb = () => {
-    if (_db) {
-        return _db;
-    }
-    throw 'No database found!';
+  if (_db) {
+    return _db;
+  }
+  throw "No database found!";
 };
 
 exports.getDb = getDb;
