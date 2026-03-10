@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "pm2-runtime start ecosystem.config.js --env production"
+    "start": "node app.js"
   },
   "author": "",
   "license": "ISC",
@@ -24,7 +24,6 @@
     "passport-facebook": "^3.0.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
-    "pm2": "^5.2.0",
     "shortid": "^2.2.15",
     "socket.io": "^2.3.0"
   }
